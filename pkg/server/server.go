@@ -8,14 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Server embeds gin.Engine for convenience and is the driver behind most of the application logic.
 type Server struct {
 	*gin.Engine
 	kp  apikeys.APIKeyProvider
 	dal *db.Queries
 }
 
+// Opt can be applied to a Server to modify its behavior
 type Opt func(*Server) error
 
+// New returns a new Server configured according to the given Opts.
 func New(q *db.Queries, opts ...Opt) (*Server, error) {
 	if q == nil {
 		return nil, fmt.Errorf("must provide a database connection")

@@ -15,6 +15,11 @@ const (
 	toCursParam  = "toCur"
 )
 
+// ExchangeRatesForCurrency returns known exchange rates for the given currency.
+// If no additional query parameters are provided, all known exchange rates will be returned.
+// If one or more toCur parameters are specified, only rates for those currencies will be returned.
+// E.g., /forex/rates/eur would return all known conversion rates from the Euro,
+// while /forex/rates/eur?toCur=CAD&toCur=USD would only return the conversion rates to Canadian and US Dollars, respectively.
 func (s *Server) ExchangeRatesForCurrency(c *gin.Context) {
 	from := strings.ToUpper(c.Param(fromCurParam))
 	toCurs := c.QueryArray(toCursParam)

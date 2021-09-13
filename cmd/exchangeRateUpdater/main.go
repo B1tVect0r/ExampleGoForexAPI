@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func updateRates(rf ratefetcher.RateFetcher, ctx context.Context) error {
+func updateRates(ctx context.Context, rf ratefetcher.RateFetcher) error {
 	segments, err := rf.MakeExchangeSegments(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to make exchange segments: %w", err)
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	for {
-		if err = updateRates(rf, ctx); err != nil {
+		if err = updateRates(ctx, rf); err != nil {
 			log.Printf("FAILED TO UPDATE RATES: %s", err.Error())
 		}
 		log.Printf("Done updating rates; sleeping for an hour.")

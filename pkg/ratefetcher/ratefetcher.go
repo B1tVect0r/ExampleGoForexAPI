@@ -12,11 +12,14 @@ import (
 	"github.com/b1tvect0r/exchangerates/pkg/db"
 )
 
+// ExchangeSegment ties a source currency to a list of destination currencies and is used to populate Fixer API requests.
 type ExchangeSegment struct {
 	FromCurrency string
 	ToCurrencies []string
 }
 
+// RateFetcher breaks the various steps of fetching & updating exchange rates out into explicit functions.
+// Todo: Look into splitting this into a proper pipeline with bounded parallelism on the Fetch step
 type RateFetcher interface {
 	MakeExchangeSegments(ctx context.Context) ([]ExchangeSegment, error)
 	FetchRates(ctx context.Context, es ExchangeSegment) ([]db.SetExchangeRateParams, error)
@@ -35,6 +38,8 @@ type defaultRateFetcher struct {
 	fixerAPIKey string
 }
 
+// Default returns the default rate fetcher (uses configured PSQL database for storage, fetches rates from Fixer)
+// Todo: Better options configuration (change datastore/source separately)
 func Default(q *db.Queries, fixerAPIKey string) (RateFetcher, error) {
 	return &defaultRateFetcher{q, fixerAPIKey}, nil
 }

@@ -19,12 +19,10 @@ func makeProjectID(length int) string {
 	return string(r)
 }
 
-type CreateProjectOutput struct {
-	APIKey string `json:"APIKey"`
-}
-
 const projectIDLength = 10
 
+// CreateProject creates a project and returns an opaque API key to the user.
+// This API key, when decrypted, contains both the project ID for the created project and the per-project unique secret.
 func (s *Server) CreateProject(c *gin.Context) {
 	pID := makeProjectID(projectIDLength)
 	pSecret := apikeys.MakeSecret()
@@ -35,5 +33,5 @@ func (s *Server) CreateProject(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, &CreateProjectOutput{key})
+	c.JSON(http.StatusOK, key)
 }

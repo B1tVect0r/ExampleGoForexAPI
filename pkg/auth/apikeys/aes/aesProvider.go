@@ -117,6 +117,7 @@ func (akp *aesAPIKeyProvider) Verify(ctx context.Context, q *db.Queries, apiKey 
 	return nil
 }
 
+// New returns an AES-driven API key provider that will sign/decrypt secrets using the provided key.
 func New(signingKey string) (apikeys.APIKeyProvider, error) {
 	return &aesAPIKeyProvider{[]byte(signingKey)}, nil
 }

@@ -12,7 +12,7 @@ import (
 const authorizationHeaderKey = "Authorization"
 const authorizationType = "Bearer"
 
-func VerifyAPIKeyMiddleware(s *Server) gin.HandlerFunc {
+func verifyAPIKeyMiddleware(s *Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var apiKey string
 		authHeader := c.Request.Header.Get(authorizationHeaderKey)
