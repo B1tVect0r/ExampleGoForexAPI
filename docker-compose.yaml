@@ -1,11 +1,23 @@
 version: "3.9"
 services:
+    ratefetch:
+        build:
+            context: .
+            dockerfile: cmd/exchangeRateUpdater/Dockerfile
+        depends_on:
+            - db
+        environment: 
+            - PSQL_CONNECTION_STRING=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
+            - FIXER_API_KEY=195c0988ab4d09afcaa6f24fde79a25d
     api:
-        build: .
+        build: 
+            context: .
+            dockerfile: cmd/api/Dockerfile
         ports:
             - "8080:8080"
         depends_on:
             - db
+            - ratefetch
         environment:
             - PSQL_CONNECTION_STRING=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
             - AES_KEY=abcdefghiklmnopq

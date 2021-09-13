@@ -16,13 +16,14 @@ WHERE from_currency=$1;
 SELECT * from exchange_rates
 WHERE from_currency=$1 AND to_currency=ANY($2);
 
--- name: SetExchangeRate :one
+-- name: SetExchangeRate :exec
 INSERT INTO exchange_rates(from_currency, to_currency, rate, rate_at)
-VALUES($1,$2,$3,$4)
+VALUES
+    ($1,$2,$3,NOW()::timestamp),
+    ($2,$1,1/$3,NOW()::timestamp)
 ON CONFLICT (from_currency, to_currency)
 DO
-    UPDATE SET rate=EXCLUDED.rate, rate_at=EXCLUDED.rate_at
-RETURNING *;
+    UPDATE SET rate=EXCLUDED.rate, rate_at=EXCLUDED.rate_at;
 
 -- name: GetProjectSecret :one
 SELECT hashed_secret

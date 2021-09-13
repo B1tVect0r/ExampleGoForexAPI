@@ -5,7 +5,6 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const addCurrency = `-- name: AddCurrency :one
@@ -19,7 +18,7 @@ func (q *Queries) AddCurrency(ctx context.Context, code string) (string, error) 
 	row := q.db.QueryRow(ctx, addCurrency, code)
 	var outCode string
 	err := row.Scan(&outCode)
-	return code, err
+	return outCode, err
 }
 
 const getAllExchangeRatesForCurrency = `-- name: GetAllExchangeRatesForCurrency :many
@@ -125,37 +124,25 @@ func (q *Queries) GetProjectSecret(ctx context.Context, projectID string) ([]byt
 	return hashed_secret, err
 }
 
-const setExchangeRate = `-- name: SetExchangeRate :one
+const setExchangeRate = `-- name: SetExchangeRate :exec
 INSERT INTO exchange_rates(from_currency, to_currency, rate, rate_at)
-VALUES($1,$2,$3,$4)
+VALUES
+    ($1,$2,$3,NOW()::timestamp),
+    ($2,$1,1/$3,NOW()::timestamp)
 ON CONFLICT (from_currency, to_currency)
 DO
     UPDATE SET rate=EXCLUDED.rate, rate_at=EXCLUDED.rate_at
-RETURNING from_currency, to_currency, rate, rate_at
 `
 
 type SetExchangeRateParams struct {
 	FromCurrency string
 	ToCurrency   string
 	Rate         float32
-	RateAt       time.Time
 }
 
-func (q *Queries) SetExchangeRate(ctx context.Context, arg SetExchangeRateParams) (ExchangeRate, error) {
-	row := q.db.QueryRow(ctx, setExchangeRate,
-		arg.FromCurrency,
-		arg.ToCurrency,
-		arg.Rate,
-		arg.RateAt,
-	)
-	var i ExchangeRate
-	err := row.Scan(
-		&i.FromCurrency,
-		&i.ToCurrency,
-		&i.Rate,
-		&i.RateAt,
-	)
-	return i, err
+func (q *Queries) SetExchangeRate(ctx context.Context, arg SetExchangeRateParams) error {
+	_, err := q.db.Exec(ctx, setExchangeRate, arg.FromCurrency, arg.ToCurrency, arg.Rate)
+	return err
 }
 
 const setProjectSecret = `-- name: SetProjectSecret :one
