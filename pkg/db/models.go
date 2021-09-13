@@ -8,7 +8,7 @@ import (
 
 type ApiKey struct {
 	ProjectID    string
-	HashedSecret string
+	HashedSecret []byte
 }
 
 type Currency struct {
@@ -18,6 +18,6 @@ type Currency struct {
 type ExchangeRate struct {
 	FromCurrency string
 	ToCurrency   string
-	Rate         string
-	Rateat       time.Time
+	Rate         float32
+	RateAt       time.Time
 }

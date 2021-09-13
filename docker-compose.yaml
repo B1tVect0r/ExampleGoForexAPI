@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+    api:
+        build: .
+        ports:
+            - "8080:8080"
+        depends_on:
+            - db
+        environment:
+            - PSQL_CONNECTION_STRING=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
+            - AES_KEY=abcdefghiklmnopq
+            - PORT=8080
+    db:
+        image: "postgres:alpine"
+        volumes:
+            - ./data/db:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_DB
+            - POSTGRES_USER
+            - POSTGRES_PASSWORD
+networks:
+    default:
+        name: example_exchangerate_service

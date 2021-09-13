@@ -16,10 +16,40 @@ RETURNING code
 `
 
 func (q *Queries) AddCurrency(ctx context.Context, code string) (string, error) {
-	row := q.db.QueryRowContext(ctx, addCurrency, code)
-	var code string
-	err := row.Scan(&code)
+	row := q.db.QueryRow(ctx, addCurrency, code)
+	var outCode string
+	err := row.Scan(&outCode)
 	return code, err
+}
+
+const getAllExchangeRatesForCurrency = `-- name: GetAllExchangeRatesForCurrency :many
+SELECT from_currency, to_currency, rate, rate_at from exchange_rates
+WHERE from_currency=$1
+`
+
+func (q *Queries) GetAllExchangeRatesForCurrency(ctx context.Context, fromCurrency string) ([]ExchangeRate, error) {
+	rows, err := q.db.Query(ctx, getAllExchangeRatesForCurrency, fromCurrency)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExchangeRate
+	for rows.Next() {
+		var i ExchangeRate
+		if err := rows.Scan(
+			&i.FromCurrency,
+			&i.ToCurrency,
+			&i.Rate,
+			&i.RateAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getCurrencies = `-- name: GetCurrencies :many
@@ -28,7 +58,7 @@ ORDER BY code
 `
 
 func (q *Queries) GetCurrencies(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, getCurrencies)
+	rows, err := q.db.Query(ctx, getCurrencies)
 	if err != nil {
 		return nil, err
 	}
@@ -41,27 +71,24 @@ func (q *Queries) GetCurrencies(ctx context.Context) ([]string, error) {
 		}
 		items = append(items, code)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
-const getExchangeRates = `-- name: GetExchangeRates :many
-SELECT from_currency, to_currency, rate, rateat from exchange_rates
-WHERE from_currency = $1 AND to_currency=ANY($2)
+const getExchangeRatesForCurrency = `-- name: GetExchangeRatesForCurrency :many
+SELECT from_currency, to_currency, rate, rate_at from exchange_rates
+WHERE from_currency=$1 AND to_currency=ANY($2)
 `
 
-type GetExchangeRatesParams struct {
+type GetExchangeRatesForCurrencyParams struct {
 	FromCurrency string
-	ToCurrency   string
+	ToCurrency   []string
 }
 
-func (q *Queries) GetExchangeRates(ctx context.Context, arg GetExchangeRatesParams) ([]ExchangeRate, error) {
-	rows, err := q.db.QueryContext(ctx, getExchangeRates, arg.FromCurrency, arg.ToCurrency)
+func (q *Queries) GetExchangeRatesForCurrency(ctx context.Context, arg GetExchangeRatesForCurrencyParams) ([]ExchangeRate, error) {
+	rows, err := q.db.Query(ctx, getExchangeRatesForCurrency, arg.FromCurrency, arg.ToCurrency)
 	if err != nil {
 		return nil, err
 	}
@@ -73,14 +100,11 @@ func (q *Queries) GetExchangeRates(ctx context.Context, arg GetExchangeRatesPara
 			&i.FromCurrency,
 			&i.ToCurrency,
 			&i.Rate,
-			&i.Rateat,
+			&i.RateAt,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -94,42 +118,42 @@ FROM api_keys
 WHERE project_id=$1
 `
 
-func (q *Queries) GetProjectSecret(ctx context.Context, projectID string) (string, error) {
-	row := q.db.QueryRowContext(ctx, getProjectSecret, projectID)
-	var hashed_secret string
+func (q *Queries) GetProjectSecret(ctx context.Context, projectID string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getProjectSecret, projectID)
+	var hashed_secret []byte
 	err := row.Scan(&hashed_secret)
 	return hashed_secret, err
 }
 
 const setExchangeRate = `-- name: SetExchangeRate :one
-INSERT INTO exchange_rates(from_currency, to_currency, rate, rateAt)
+INSERT INTO exchange_rates(from_currency, to_currency, rate, rate_at)
 VALUES($1,$2,$3,$4)
 ON CONFLICT (from_currency, to_currency)
 DO
-    UPDATE SET rate=EXCLUDED.rate, rateAt=EXCLUDED.rateAt
-RETURNING from_currency, to_currency, rate, rateat
+    UPDATE SET rate=EXCLUDED.rate, rate_at=EXCLUDED.rate_at
+RETURNING from_currency, to_currency, rate, rate_at
 `
 
 type SetExchangeRateParams struct {
 	FromCurrency string
 	ToCurrency   string
-	Rate         string
-	Rateat       time.Time
+	Rate         float32
+	RateAt       time.Time
 }
 
 func (q *Queries) SetExchangeRate(ctx context.Context, arg SetExchangeRateParams) (ExchangeRate, error) {
-	row := q.db.QueryRowContext(ctx, setExchangeRate,
+	row := q.db.QueryRow(ctx, setExchangeRate,
 		arg.FromCurrency,
 		arg.ToCurrency,
 		arg.Rate,
-		arg.Rateat,
+		arg.RateAt,
 	)
 	var i ExchangeRate
 	err := row.Scan(
 		&i.FromCurrency,
 		&i.ToCurrency,
 		&i.Rate,
-		&i.Rateat,
+		&i.RateAt,
 	)
 	return i, err
 }
@@ -145,11 +169,11 @@ returning project_id, hashed_secret
 
 type SetProjectSecretParams struct {
 	ProjectID    string
-	HashedSecret string
+	HashedSecret []byte
 }
 
 func (q *Queries) SetProjectSecret(ctx context.Context, arg SetProjectSecretParams) (ApiKey, error) {
-	row := q.db.QueryRowContext(ctx, setProjectSecret, arg.ProjectID, arg.HashedSecret)
+	row := q.db.QueryRow(ctx, setProjectSecret, arg.ProjectID, arg.HashedSecret)
 	var i ApiKey
 	err := row.Scan(&i.ProjectID, &i.HashedSecret)
 	return i, err

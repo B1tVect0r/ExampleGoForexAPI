@@ -2,6 +2,7 @@ version: 1
 packages:
   - path: "pkg/db"
     name: "db"
-    engine: "postgresql"
     schema: "pkg/db/schema.sql"
     queries: "pkg/db/queries.sql"
+    engine: "postgresql"
+    sql_package: "pgx/v4"

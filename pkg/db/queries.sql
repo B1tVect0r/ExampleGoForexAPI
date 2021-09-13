@@ -8,16 +8,20 @@ RETURNING *;
 SELECT * from currencies
 ORDER BY code;
 
--- name: GetExchangeRates :many
+-- name: GetAllExchangeRatesForCurrency :many
 SELECT * from exchange_rates
-WHERE from_currency = $1 AND to_currency=ANY($2);
+WHERE from_currency=$1;
+
+-- name: GetExchangeRatesForCurrency :many
+SELECT * from exchange_rates
+WHERE from_currency=$1 AND to_currency=ANY($2);
 
 -- name: SetExchangeRate :one
-INSERT INTO exchange_rates(from_currency, to_currency, rate, rateAt)
+INSERT INTO exchange_rates(from_currency, to_currency, rate, rate_at)
 VALUES($1,$2,$3,$4)
 ON CONFLICT (from_currency, to_currency)
 DO
-    UPDATE SET rate=EXCLUDED.rate, rateAt=EXCLUDED.rateAt
+    UPDATE SET rate=EXCLUDED.rate, rate_at=EXCLUDED.rate_at
 RETURNING *;
 
 -- name: GetProjectSecret :one
