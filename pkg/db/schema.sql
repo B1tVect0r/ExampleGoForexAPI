@@ -14,3 +14,7 @@ CREATE TABLE exchange_rates (
     rate_at timestamp NOT NULL,
     PRIMARY KEY(from_currency, to_currency)
 );
+
+INSERT INTO currencies VALUES
+    ('USD'),
+    ('EUR');
