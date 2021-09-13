@@ -12,6 +12,7 @@ type APIKeyParameters struct {
 	Secret    []byte `json:"Secret"`
 }
 
+// Todo: Replace the reference to concrete db.Queries with an appropriate interface for testability
 type APIKeyProvider interface {
 	Create(ctx context.Context, q *db.Queries, kp APIKeyParameters) (string, error)
 	Verify(ctx context.Context, q *db.Queries, apiKey string) error

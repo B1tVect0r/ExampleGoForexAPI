@@ -21,9 +21,8 @@ func New(q *db.Queries, opts ...Opt) (*Server, error) {
 		return nil, fmt.Errorf("must provide a database connection")
 	}
 
-	s := &Server{Engine: gin.Default()}
+	s := &Server{Engine: gin.Default(), dal: q}
 	s.withDefaultRoutes()
-	s.dal = q
 
 	for _, opt := range opts {
 		if err := opt(s); err != nil {
